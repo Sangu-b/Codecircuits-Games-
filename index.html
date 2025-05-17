@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate RPS Arena</title>
+    <style>
+        :root {
+            --primary: #ff4757;
+            --secondary: #2ed573;
+            --accent: #1e90ff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial Rounded', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(45deg, #1a1a2e, #0f3460, #533483);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+            overflow: hidden;
+        }
+
+        .score-board {
+            display: flex;
+            gap: 4rem;
+            margin: 2rem 0;
+            font-size: 1.5rem;
+            z-index: 2;
+        }
+
+        .score {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem 3rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .arena {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin: 3rem 0;
+            z-index: 2;
+        }
+
+        .choice-card {
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .choice-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            background: rgba(255,255,255,0.2);
+        }
+
+        .hand-icon {
+            font-size: 6rem;
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3));
+        }
+
+        .floating-cards {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .floating-card {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 20s infinite linear;
+            font-size: 8rem;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 110vh) rotate(0deg); }
+            100% { transform: translate(100vw, -10vh) rotate(360deg); }
+        }
+
+        .computer-choice {
+            animation: reveal 0.5s ease;
+        }
+
+        @keyframes reveal {
+            0% { transform: rotateY(90deg); }
+            100% { transform: rotateY(0deg); }
+        }
+
+        .results {
+            font-size: 2rem;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            margin-top: 2rem;
+            z-index: 2;
+        }
+
+        .win { background: linear-gradient(45deg, #2ed573, #1e90ff); }
+        .lose { background: linear-gradient(45deg, #ff4757, #eccc68); }
+        .draw { background: linear-gradient(45deg, #a4b0be, #747d8c); }
+    </style>
+</head>
+<body>
+    <div class="floating-cards">
+        <div class="floating-card">✊</div>
+        <div class="floating-card">✋</div>
+        <div class="floating-card">✌️</div>
+        <!-- More floating elements added via JS -->
+    </div>
+
+    <div class="score-board">
+        <div class="score">Player: <span id="player-score">0</span></div>
+        <div class="score">Computer: <span id="computer-score">0</span></div>
+    </div>
+
+    <div class="arena">
+        <div class="choice-card" onclick="playGame('✊')">
+            <div class="hand-icon">✊</div>
+        </div>
+        <div class="choice-card" onclick="playGame('✋')">
+            <div class="hand-icon">✋</div>
+        </div>
+        <div class="choice-card" onclick="playGame('✌️')">
+            <div class="hand-icon">✌️</div>
+        </div>
+    </div>
+
+    <div class="results" id="results"></div>
+
+    <script>
+        let playerScore = 0, computerScore = 0;
+        const results = document.getElementById('results');
+        const floatingContainer = document.querySelector('.floating-cards');
+
+        // Create floating elements
+        for (let i = 0; i < 12; i++) {
+            const card = document.createElement('div');
+            card.className = 'floating-card';
+            card.textContent = ['✊', '✋', '✌️'][Math.floor(Math.random() * 3)];
+            card.style.left = `${Math.random() * 100}%`;
+            card.style.animationDelay = `${Math.random() * 20}s`;
+            floatingContainer.appendChild(card);
+        }
+
+        function getComputerChoice() {
+            return ['✊', '✋', '✌️'][Math.floor(Math.random() * 3)];
+        }
+
+        function updateScore() {
+            document.getElementById('player-score').textContent = playerScore;
+            document.getElementById('computer-score').textContent = computerScore;
+        }
+
+        function playGame(playerChoice) {
+            const computerChoice = getComputerChoice();
+            
+            // Game logic
+            let result;
+            if (playerChoice === computerChoice) {
+                result = { text: 'DRAW!', class: 'draw' };
+            } else if (
+                (playerChoice === '✊' && computerChoice === '✌️') ||
+                (playerChoice === '✋' && computerChoice === '✊') ||
+                (playerChoice === '✌️' && computerChoice === '✋')
+            ) {
+                result = { text: 'YOU WIN!', class: 'win' };
+                playerScore++;
+            } else {
+                result = { text: 'COMPUTER WINS!', class: 'lose' };
+                computerScore++;
+            }
+
+            // Update UI
+            results.textContent = result.text;
+            results.className = `results ${result.class}`;
+            updateScore();
+            localStorage.setItem('rpsScore', JSON.stringify({ playerScore, computerScore }));
+        }
+
+        // Initialize
+        window.onload = () => {
+            const savedScore = localStorage.getItem('rpsScore');
+            if (savedScore) {
+                const scores = JSON.parse(savedScore);
+                playerScore = scores.playerScore;
+                computerScore = scores.computerScore;
+                updateScore();
+            }
+        };
+    </script>
+</body>
+</html>
